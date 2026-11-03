@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./telegram_sessions:/app/telegram_sessions
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: /api
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

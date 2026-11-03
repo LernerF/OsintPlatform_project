@@ -1,0 +1,6 @@
+[Unit]
+Description=Renew the TLS certificate for Aerial Sentinel
+
+[Service]
+Type=oneshot
+ExecStart=/opt/aerial-sentinel-certbot/bin/certbot renew --quiet --deploy-hook "/usr/bin/docker exec aerial-sentinel-gateway nginx -s reload"

@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# Environment
+.env
+*.local
+
+# Data and sessions (keep example file only)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/example_channels.txt
+telegram_sessions/
+public/.htpasswd
+
+# Session files
+*.session
+*.session-journal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+*.egg-info/
+dist/
+build/

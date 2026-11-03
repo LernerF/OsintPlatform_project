@@ -1,0 +1,103 @@
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    app_name: str = "Aerial Sentinel"
+    api_prefix: str = "/api"
+    debug: bool = False
+
+    data_dir: Path = Path("./data")
+    database_url: str = "sqlite:///./data/app.db"
+
+    cors_origins_csv: str = Field(
+        default="http://localhost:5173",
+        validation_alias="CORS_ORIGINS",
+    )
+
+    telegram_enabled: bool = False
+    telegram_api_id: int | None = None
+    telegram_api_hash: str | None = None
+    telegram_session_name: str = "drone_monitor"
+    telegram_proxy_host: str | None = None
+    telegram_proxy_port: int = 0
+    telegram_proxy_username: str | None = None
+    telegram_proxy_password: SecretStr | None = None
+    telegram_poll_enabled_sources: bool = True
+    telegram_poll_interval_seconds: float = 300.0
+    telegram_poll_limit_per_source: int = 100
+    telegram_poll_max_pages_per_source: int = 10
+    telegram_comments_safety_scan_seconds: int = 600
+    telegram_comments_max_concurrency: int = 2
+    telegram_comments_due_batch_size: int = 20
+    telegram_comments_max_per_poll: int = 500
+    telegram_comments_min_interval_seconds: int = 15
+
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "anthropic/claude-haiku-4.5"
+    openrouter_timeout_seconds: float = 30.0
+    openrouter_max_concurrency: int = 8
+
+    geocoder_provider: str = "nominatim"
+    yandex_geocoder_api_key: str | None = None
+    nominatim_base_url: str = "https://nominatim.openstreetmap.org"
+    nominatim_user_agent: str = "aerial-sentinel/1.0"
+    photon_base_url: str = "https://photon.komoot.io"
+    nominatim_min_interval_seconds: float = 1.05
+    yandex_geocoder_max_concurrency: int = 3
+    geocoder_cache_size: int = 2_000
+
+    webhook_urls_csv: str = Field(default="", validation_alias="WEBHOOK_URLS")
+    webhook_timeout_seconds: float = 5.0
+    webhook_max_concurrency: int = 5
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return self._parse_csv_list(self.cors_origins_csv)
+
+    @property
+    def webhook_urls(self) -> list[str]:
+        return self._parse_csv_list(self.webhook_urls_csv)
+
+    @property
+    def telegram_proxy(self) -> dict[str, str | int] | None:
+        if not self.telegram_proxy_host:
+            return None
+        if not 1 <= self.telegram_proxy_port <= 65535:
+            raise ValueError("TELEGRAM_PROXY_PORT must be between 1 and 65535")
+        proxy: dict[str, str | int] = {
+            "proxy_type": "http",
+            "addr": self.telegram_proxy_host,
+            "port": self.telegram_proxy_port,
+        }
+        if self.telegram_proxy_username:
+            proxy["username"] = self.telegram_proxy_username
+        if self.telegram_proxy_password:
+            proxy["password"] = self.telegram_proxy_password.get_secret_value()
+        return proxy
+
+    def _parse_csv_list(self, value: str | None) -> list[str]:
+        if not value:
+            return []
+        return [item.strip() for item in value.split(",") if item.strip()]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    value = Settings()
+    value.data_dir.mkdir(parents=True, exist_ok=True)
+    return value
+
+
+settings = get_settings()
